@@ -1,0 +1,52 @@
+
+#caption {
+	position: absolute;
+	left: 40%;
+	height: 5%;
+	display: flex;
+	/*background: aqua;*/
+}
+
+#image-box {
+    position: absolute;
+    left: 20%;
+    top: 10%;
+    width: 60%;
+    height: 50%;
+    display: flex;
+    background: aqua;
+}
+
+#img1 {
+    position: absolute;
+    left: 6%;
+    top: 10%;
+    width: 40%;
+    height: 80%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: white;
+}
+
+#img2 {
+    position: absolute;
+    left: 53%;
+    top: 10%;
+    width: 40%;
+    height: 80%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: white;
+}
+
+#select {
+    position: absolute;
+    left: 23%;
+    top: 63%;
+    width: 57%;
+    height: 20%;
+    display: flex;
+    background: aqua;
+}

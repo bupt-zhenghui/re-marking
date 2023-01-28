@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href='../static/css/index.css' rel="stylesheet"/>
+    <script src="../static/js/jquery-3.5.1.js"></script>
+    <title>re-marking</title>
+</head>
+<script>
+    const prefix="http://sky77.deepfashion.net:6066/"
+
+    function get_sample(user) {
+        var inner_data
+        $.ajax({
+            url: '/sample?user=' + user,
+            timeout: 10000,
+            async: false,
+            success: function (data) {
+                inner_data = data.data
+
+                document.getElementById("re").value=null
+                document.getElementById("l1").innerText=null
+                document.getElementById("l2").innerText=null
+                document.getElementById("l3").innerText=null
+                document.getElementById("l4").innerText=null
+                document.getElementById("iou1").innerText=null
+                document.getElementById("iou2").innerText=null
+                document.getElementById("iou3").innerText=null
+                document.getElementById("iou4").innerText=null
+                $("#a1").prop("checked",false)
+                $("#a2").prop("checked",false)
+                $("#a3").prop("checked",false)
+                $("#a4").prop("checked",false)
+                $("#a1").prop("disabled",true)
+                $("#a2").prop("disabled",true)
+                $("#a3").prop("disabled",true)
+                $("#a4").prop("disabled",true)
+
+
+                // console.log(inner_data['sample']['sample_id'])
+                document.getElementById("sample_id").innerText=inner_data['sample']['sample_id']
+                document.getElementById("sol").innerText=inner_data['user_count']
+                document.getElementById("remain").innerText=inner_data['remain']
+
+                real = prefix + inner_data['sample']['real']
+                mask = prefix + inner_data['sample']['mask']
+                $("#i1").attr("src", real);
+                $("#i2").attr("src", mask);
+
+                refs = inner_data['sample']['refs']
+                ious = inner_data['sample']['ious']
+                if (refs.length > 0) {
+                    document.getElementById("l1").innerText = refs[0]
+                    document.getElementById("iou1").innerText = ious[0]
+                    $("#a1").prop("disabled", false)
+                }
+                if (refs.length > 1) {
+                    document.getElementById("l2").innerText = refs[1]
+                    document.getElementById("iou2").innerText = ious[1]
+                    $("#a2").prop("disabled", false)
+                }
+                if (refs.length > 2) {
+                    document.getElementById("l3").innerText = refs[2]
+                    document.getElementById("iou3").innerText = ious[2]
+                    $("#a3").prop("disabled", false)
+                }
+                if (refs.length > 3) {
+                    document.getElementById("l4").innerText = refs[3]
+                    document.getElementById("iou4").innerText = ious[3]
+                    $("#a4").prop("disabled", false)
+                }
+            }
+        })
+        return inner_data
+    }
+
+    function send_result(user, form) {
+        sample_id = document.getElementById("sample_id").innerText
+
+        $.ajaxSettings.async = false;
+        $.post('/send',
+            {
+                "user": user,
+                "sample_id": sample_id,
+                "form": form
+            },
+            function (res) {    // 回调函数
+                console.log(res);
+            }
+        )
+        $.ajaxSettings.async = true;
+    }
+
+    function check_empty() {
+        let re = document.getElementById("re").value
+        let is_empty = true
+        if (document.getElementById("a1").checked || document.getElementById("a2").checked ||
+        document.getElementById("a3").checked || document.getElementById("a4").checked || re !== "") {
+            is_empty = false;
+        }
+        return is_empty
+    }
+
+    function login() {
+        var ret = prompt('请输入用户名');
+        if(ret !== null && ret !== '') {
+            if (validation(ret)) {
+                SetCookie("sessid", ret)
+            }
+        }
+        console.log("ok!")
+    }
+
+    function validation(name) {
+        let flag = false;
+        $.ajax({
+            url: '/validation?user=' + name,
+            timeout: 10000,
+            async: false,
+            success: function (data){
+                flag = data.data['valid']
+            }
+        })
+        return flag
+    }
+
+    function SetCookie(name,value) {
+        var Days = 30*12;  //cookie 将被保存一年
+        var exp = new Date(); //获得当前时间
+        exp.setTime(exp.getTime() + Days*24*60*60*1000); //换成毫秒
+        document.cookie = name + "="+ escape (value) + ";expires=" + exp.toGMTString();
+    }
+
+    function getCookie(name) {
+        var arr = document.cookie.match(new RegExp("(^| )"+name+"=([^;]*)(;|$)"));
+        if(arr != null) {
+            return unescape(arr[2]);
+        } else {
+            return null;
+       }
+    }
+
+
+    $(function() {
+        $("#ff").submit(function(e) {
+            user = getCookie("sessid")
+            if (user == null) { login() }
+            user = getCookie("sessid")
+
+            if (user == null) { return }
+            else if (check_empty()) {
+                alert("Empty Answer!")
+            } else {
+                var form = $(this).serialize();
+                console.log('form: ', form)
+                send_result(user, form)
+                get_sample(user)
+            }
+            e.preventDefault(); // avoid to execute the actual submit of the form.
+        });
+    })
+
+    $(function() {
+        $('input:radio[name="age"]').click(function() {
+            // alert(checkValue);
+            document.getElementById("re").value=$('input:radio[name="age"]:checked').next("label").text();
+        });
+    })
+
+</script>
+<body>
+    <h3 id="caption">Referring Expression Marking</h3>
+    <div id="image-box">
+        <div id="img1">
+            <img id="i1" style="max-width:100%;max-height:100%" src="https://img-1300769438.cos.ap-beijing.myqcloud.com/images/202212302031509.png"  alt=""/>
+        </div>
+        <div id="img2">
+            <img id="i2" style="max-width:100%;max-height:100%" src="https://img-1300769438.cos.ap-beijing.myqcloud.com/images/202212302033882.png"  alt=""/>
+        </div>
+    </div>
+    <div id="select">
+        Question ID: <label id="sample_id">-1</label><br>
+        <form id="ff" style="position:absolute;width:100%;top:15%">
+            <input type="checkbox" id="a1" name="age" value="A">
+            <label id="l1" for="a1">1. You can choose more than one option</label>
+            &nbsp;<label id="iou1" style="color:red">0.50</label><br>
+            <input type="checkbox" id="a2" name="age" value="B">
+            <label id="l2" for="a2">2. Please describe the object as best you can</label>
+            &nbsp;<label id="iou2" style="color:red">0.50</label><br>
+            <input type="checkbox" id="a3" name="age" value="C">
+            <label id="l3" for="a3">3. You can print none if you can't give a specific description</label>
+            &nbsp;<label id="iou3" style="color:red">0.50</label><br>
+            <input type="checkbox" id="a4" name="age" value="D">
+            <label id="l4" for="a4">4. Thank you for your efforts, we will provide you with a corresponding reward</label>
+            &nbsp;<label id="iou4" style="color:red">0.50</label><br>
+
+            <input style="width:50%" type="text" id="re" name="re" value="">
+            <input type="submit" value="Submit">
+            Solved: <label id="sol">0</label>
+            | Remain: <label id="remain">48000</label>
+        </form>
+    </div>
+</body>
+<script>
+    // get_sample()
+</script>
+</html>
